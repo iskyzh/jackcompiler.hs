@@ -18,15 +18,19 @@ data JackToken = Keyword String
 
 tokenize :: String -> [JackToken]
 
-tokenize (x : xs) | x `elem` symbols    = Symbol x : tokenize xs
-                  | x == '"'            = tokenizeString xs
-                  | isDigit x           = tokenizeInteger allTokens
-                  | isIdentifierBegin x = tokenizeIdentifier allTokens
-                  | isSpace x           = tokenize xs
-                  | otherwise           = undefined
+tokenize (x : xs) | isCommentBegin allTokens     = parseComments xs
+                  | isCommentLineBegin allTokens = tokenize nextLine
+                  | x `elem` symbols             = Symbol x : tokenize xs
+                  | x == '"'                     = tokenizeString xs
+                  | isDigit x                    = tokenizeInteger allTokens
+                  | isIdentifierBegin x          = tokenizeIdentifier allTokens
+                  | isSpace x                    = tokenize xs
+                  | otherwise                    = undefined
   where
     symbols   = "{}()[].,;+-*/&|<>=-"
     allTokens = (x : xs)
+    nextLine =
+        let (prev, nextLine) = break (== '\n') allTokens in drop 1 nextLine
 
 tokenize _ = []
 
@@ -79,8 +83,23 @@ tokenizeIdentifier str = tokenizeIdentifier' str ""  where
         , "return"
         ]
 
+parseComments :: String -> [JackToken]
+parseComments (x : xs) | isCommentEnd xs = tokenize restTokens
+                       | otherwise       = parseComments xs
+    where restTokens = drop 2 xs
+parseComments _ = []
+
 isIdentifier :: Char -> Bool
 isIdentifier x = isLetter x || isDigit x || x == '_'
 
 isIdentifierBegin :: Char -> Bool
 isIdentifierBegin x = isLetter x || x == '_'
+
+isCommentLineBegin :: String -> Bool
+isCommentLineBegin x = take 2 x == "//"
+
+isCommentBegin :: String -> Bool
+isCommentBegin x = take 2 x == "/*"
+
+isCommentEnd :: String -> Bool
+isCommentEnd x = take 2 x == "*/"

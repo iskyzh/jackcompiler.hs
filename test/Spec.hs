@@ -70,7 +70,7 @@ main = hspec $ do
             tokenize "return" `shouldBe` [Keyword "return"]
 
         it "should parse multiple tokens" $ do
-            tokenize "let x = x + 1"
+            tokenize "let    x=x+ 1"
                 `shouldBe` [ Keyword "let"
                            , Identifier "x"
                            , Symbol '='
@@ -78,7 +78,7 @@ main = hspec $ do
                            , Symbol '+'
                            , IntegerConstant 1
                            ]
-            tokenize "do brush.print(obj, 2, 200, true)"
+            tokenize "do    brush. print(   obj, 2  , 200 , true)"
                 `shouldBe` [ Keyword "do"
                            , Identifier "brush"
                            , Symbol '.'
@@ -94,6 +94,27 @@ main = hspec $ do
                            , Symbol ')'
                            ]
             tokenize "if ((x + size) < 510) { }\nreturn;"
+                `shouldBe` [ Keyword "if"
+                           , Symbol '('
+                           , Symbol '('
+                           , Identifier "x"
+                           , Symbol '+'
+                           , Identifier "size"
+                           , Symbol ')'
+                           , Symbol '<'
+                           , IntegerConstant 510
+                           , Symbol ')'
+                           , Symbol '{'
+                           , Symbol '}'
+                           , Keyword "return"
+                           , Symbol ';'
+                           ]
+
+        it "should ignore comments" $ do
+            tokenize "// comments" `shouldBe` []
+            tokenize "/* comments \n\n */" `shouldBe` []
+            tokenize
+                "if ((x + size) < 510) { /* \n SOME COMMENTS \n*/ }\n // comments \n return;"
                 `shouldBe` [ Keyword "if"
                            , Symbol '('
                            , Symbol '('
