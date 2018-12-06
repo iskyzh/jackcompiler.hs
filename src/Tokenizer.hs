@@ -20,14 +20,13 @@ tokenize :: String -> [JackToken]
 
 tokenize (x : xs) | isCommentBegin allTokens     = parseComments xs
                   | isCommentLineBegin allTokens = tokenize nextLine
-                  | x `elem` symbols             = Symbol x : tokenize xs
+                  | isSymbol x                   = Symbol x : tokenize xs
                   | x == '"'                     = tokenizeString xs
                   | isDigit x                    = tokenizeInteger allTokens
                   | isIdentifierBegin x          = tokenizeIdentifier allTokens
                   | isSpace x                    = tokenize xs
                   | otherwise                    = undefined
   where
-    symbols   = "{}()[].,;+-*/&|<>=-"
     allTokens = (x : xs)
     nextLine =
         let (prev, nextLine) = break (== '\n') allTokens in drop 1 nextLine
@@ -37,14 +36,16 @@ tokenize _ = []
 tokenizeString :: String -> [JackToken]
 tokenizeString str = tokenizeString' str ""  where
     tokenizeString' (x : xs) str | x == '\"' = StringConstant str : tokenize xs
+                                 | x == '\n' = error "not a string"
                                  | otherwise = tokenizeString' xs (str ++ [x])
-    tokenizeString' _ str = [StringConstant str]
+    tokenizeString' _ str = error "not a string"
 
 tokenizeInteger :: String -> [JackToken]
 tokenizeInteger str = tokenizeInteger' str 0  where
     tokenizeInteger' (x : xs) num
         | isDigit x = tokenizeInteger' xs (num * 10 + (read [x]) :: Int)
-        | otherwise = IntegerConstant num : tokenize (x : xs)
+        | isSpace x || isSymbol x = IntegerConstant num : tokenize (x : xs)
+        | otherwise = error "not an integer"
     tokenizeInteger' _ num = [IntegerConstant num]
 
 tokenizeIdentifier :: String -> [JackToken]
@@ -103,3 +104,6 @@ isCommentBegin x = take 2 x == "/*"
 
 isCommentEnd :: String -> Bool
 isCommentEnd x = take 2 x == "*/"
+
+isSymbol :: Char -> Bool
+isSymbol x = x `elem` symbols where symbols = "{}()[].,;+-*/&|<>=-"
