@@ -1,3 +1,4 @@
 .stack-work/
 jackcompiler.cabal
 *~
+/test/data
