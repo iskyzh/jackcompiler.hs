@@ -6,11 +6,15 @@ where
 import           Test.Hspec
 import           Tokenizer
 import           Control.Exception              ( evaluate )
+import           System.Directory               ( getCurrentDirectory
+                                                , withCurrentDirectory
+                                                , canonicalizePath
+                                                )
 
 testTokenizer = do
     describe "tokenizer" $ do
         it "should parse symbols" $ do
-            tokenize "&,;)[=-*+].|<{>-}(/"
+            tokenize "&,;)[=-*+].|<{>-}(~/"
                 `shouldBe` [ Symbol '&'
                            , Symbol ','
                            , Symbol ';'
@@ -29,8 +33,11 @@ testTokenizer = do
                            , Symbol '-'
                            , Symbol '}'
                            , Symbol '('
+                           , Symbol '~'
                            , Symbol '/'
                            ]
+        it "should not parse unknown token" $ do
+            evaluate (tokenize "$$#") `shouldThrow` anyErrorCall
 
         it "should parse integer constant" $ do
             tokenize "23333" `shouldBe` [IntegerConstant 23333]
@@ -142,3 +149,22 @@ testTokenizer = do
                            , Keyword "return"
                            , Symbol ';'
                            ]
+
+        describe "should parse Nand2Tetris examples" $ do
+            it "should parse ArrayTest" $ do
+                testTokenizeFile "10/ArrayTest/Main"
+            it "should parse ExpressionLessSquare" $ do
+                testTokenizeFile "10/ExpressionLessSquare/Main"
+                testTokenizeFile "10/ExpressionLessSquare/Square"
+                testTokenizeFile "10/ExpressionLessSquare/SquareGame"
+            it "should parse Square" $ do
+                testTokenizeFile "10/Square/Main"
+                testTokenizeFile "10/Square/Square"
+                testTokenizeFile "10/Square/SquareGame"
+
+testTokenizeFile filePath = do
+    currentDir <- getCurrentDirectory
+    file       <- canonicalizePath (currentDir ++ "/test/data/" ++ filePath)
+    jack       <- readFile $ file ++ ".jack"
+    result     <- readFile $ file ++ "T.xml"
+    (lines . parseTokenXML . tokenize) jack `shouldBe` map (\r -> filter (\c -> c /= '\n' && c /= '\r') r) (lines result)

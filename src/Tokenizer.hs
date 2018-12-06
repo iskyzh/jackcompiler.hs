@@ -1,6 +1,8 @@
 module Tokenizer
     ( JackToken(..)
     , tokenize
+    , parseToken
+    , parseTokenXML
     )
 where
 
@@ -25,7 +27,7 @@ tokenize (x : xs) | isCommentBegin allTokens     = parseComments xs
                   | isDigit x                    = tokenizeInteger allTokens
                   | isIdentifierBegin x          = tokenizeIdentifier allTokens
                   | isSpace x                    = tokenize xs
-                  | otherwise                    = undefined
+                  | otherwise                    = error "not a token"
   where
     allTokens = (x : xs)
     nextLine =
@@ -84,6 +86,34 @@ tokenizeIdentifier str = tokenizeIdentifier' str ""  where
         , "return"
         ]
 
+parseToken :: [JackToken] -> String
+parseToken (x : xs) = show x ++ ['\n'] ++ parseToken xs
+parseToken _        = ""
+
+parseTokenXML :: [JackToken] -> String
+parseTokenXML tokens =
+    unlines $ ["<tokens>"] ++ parseTokenXML' tokens ++ ["</tokens>"]  where
+    parseTokenXML' :: [JackToken] -> [String]
+    parseTokenXML' (x : xs) =
+        case x of
+                Keyword    keyword -> enclose keyword "keyword"
+                Identifier id      -> enclose id "identifier"
+                Symbol     symbol  -> enclose
+                    (case symbol of
+                        '<' -> "&lt;"
+                        '>' -> "&gt;"
+                        '&' -> "&amp;"
+                        _   -> [symbol]
+                    )
+                    "symbol"
+                StringConstant str -> enclose str "stringConstant"
+                IntegerConstant num -> enclose (show num) "integerConstant"
+            : parseTokenXML' xs
+    parseTokenXML' _ = []
+
+    enclose :: String -> String -> String
+    enclose str tag = "<" ++ tag ++ "> " ++ str ++ " </" ++ tag ++ ">"
+
 parseComments :: String -> [JackToken]
 parseComments (x : xs) | isCommentEnd xs = tokenize restTokens
                        | otherwise       = parseComments xs
@@ -106,4 +136,4 @@ isCommentEnd :: String -> Bool
 isCommentEnd x = take 2 x == "*/"
 
 isSymbol :: Char -> Bool
-isSymbol x = x `elem` symbols where symbols = "{}()[].,;+-*/&|<>=-"
+isSymbol x = x `elem` symbols where symbols = "{}()[].,;+-*/&|<>=-~"
