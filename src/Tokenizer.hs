@@ -20,7 +20,7 @@ data JackToken = Keyword String
 
 tokenize :: String -> [JackToken]
 
-tokenize (x : xs) | isCommentBegin allTokens     = parseComments xs
+tokenize allTokens@(x : xs) | isCommentBegin allTokens     = parseComments xs
                   | isCommentLineBegin allTokens = tokenize nextLine
                   | isSymbol x                   = Symbol x : tokenize xs
                   | x == '"'                     = tokenizeString xs
@@ -29,7 +29,6 @@ tokenize (x : xs) | isCommentBegin allTokens     = parseComments xs
                   | isSpace x                    = tokenize xs
                   | otherwise                    = error "not a token"
   where
-    allTokens = (x : xs)
     nextLine =
         let (prev, nextLine) = break (== '\n') allTokens in drop 1 nextLine
 
