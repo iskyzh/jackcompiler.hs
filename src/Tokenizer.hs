@@ -10,7 +10,6 @@ import           Data.Char                      ( isDigit
                                                 , isLetter
                                                 , isSpace
                                                 )
-
 data JackToken = Keyword String
                | Symbol Char
                | IntegerConstant Int
@@ -19,7 +18,6 @@ data JackToken = Keyword String
                deriving (Show, Eq)
 
 tokenize :: String -> [JackToken]
-
 tokenize allTokens@(x : xs) | isCommentBegin allTokens     = parseComments xs
                   | isCommentLineBegin allTokens = tokenize nextLine
                   | isSymbol x                   = Symbol x : tokenize xs

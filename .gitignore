@@ -2,3 +2,5 @@
 jackcompiler.cabal
 *~
 /test/data
+.liquid/
+
