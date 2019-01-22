@@ -58,18 +58,38 @@ p `chainl1` op = do {a <- p; rest a}
 data ParseResult = ParseResult {  what :: String,
                                   children :: [ParseResult] } 
                  | ParseNode {  what :: String,
-                                content :: String }
+                                content :: JackToken }
+    deriving(Show, Eq)
 
-{-
 expression :: Parser ParseResult
-expression = term `chainl1` term
+expression = term `chainl1` op
 
 term :: Parser ParseResult
-term = do {}
--}
+term = checkIf isIntegerConstant "integerConstant"
+        +++ checkIf isStringConstant "stringConstant"
+        +++ do { k <- keywordConstant ; return $ ParseNode "keywordConstant" k }
+        +++ do { id <- sat isIdentifier ; return $ ParseNode "varName" id }
+
+checkIf :: (JackToken -> Bool) -> String -> Parser ParseResult
+checkIf cond what = do { p <- sat cond ; return $ ParseNode what p }
 
 keywordConstant :: Parser JackToken
 keywordConstant = sat (== Keyword "true") 
                     +++ sat (== Keyword "false")
                     +++ sat (== Keyword "null")
                     +++ sat (== Keyword "this")
+
+subroutineCall :: Parser ParseResult
+subroutineCall = undefined
+
+op :: Parser (ParseResult -> ParseResult -> ParseResult)
+op = do { o <- sat isOp ; return $ mergeResult o } where
+    isOp :: JackToken -> Bool
+    isOp (Symbol x) = x `elem` symbols where symbols = "+-*/&|<>="
+    isOp _ = False
+
+mergeResult :: JackToken -> ParseResult -> ParseResult -> ParseResult
+mergeResult symb lnode@(ParseNode _ _) rnode@(ParseNode _ _) = ParseResult "term" [lnode, ParseNode "op" symb, rnode]
+mergeResult symb (ParseResult what children) rnode@(ParseNode _ _) = ParseResult what (children ++ [ParseNode "op" symb] ++ [rnode])
+mergeResult symb lnode@(ParseNode _ _) (ParseResult what children) = ParseResult what (lnode : [ParseNode "op" symb] ++ children)
+mergeResult symb (ParseResult whatL childrenL) (ParseResult whatR childrenR) = ParseResult whatL (childrenL ++ [ParseNode "op" symb] ++ childrenR)
