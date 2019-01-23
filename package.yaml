@@ -1,10 +1,10 @@
 name:                jackcompiler
-version:             0.1.0.0
+version:             0.2.0.0
 github:              "skyzh/jackcompiler"
-license:             BSD3
+license:             MIT
 author:              "Alex Chi"
 maintainer:          "iskyzh@gmail.com"
-copyright:           "2018 Alex Chi"
+copyright:           "2019 Alex Chi"
 
 extra-source-files:
 - README.md
