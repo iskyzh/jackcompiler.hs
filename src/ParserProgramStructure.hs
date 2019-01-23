@@ -2,6 +2,7 @@ module ParserProgramStructure where
 
 import TokenParser
 import Tokenizer
+import ParserUtil
 
 pClassName :: Parser ParseResult
 pClassName = ParseNode <$> sat isIdentifier
@@ -20,21 +21,15 @@ pType = (ParseNode <$> sat (== Keyword "int"))
 
 pClass :: Parser ParseResult
 pClass = do 
-    kwd <- sat (== Keyword "class")
+    kwd <- ParseNode <$> sat (== Keyword "class")
     className <- pClassName
-    sym1 <- sat (== Symbol '{')
-    classVarDecs <- many0 pClassVarDec
-    subroutineDecs <- many0 pSubroutineDec
-    sym2 <- sat (== Symbol '}')
+    decs <- pBrackets '{' '}' $ do
+        classVarDecs <- many0 pClassVarDec
+        subroutineDecs <- many0 pSubroutineDec
+        return $ classVarDecs ++ subroutineDecs
     return $ ParseTree {
         what = "class",
-        children = [
-            ParseNode kwd,
-            className,
-            ParseNode sym1
-        ] ++ classVarDecs
-          ++ subroutineDecs
-          ++ [ParseNode sym2]
+        children = [kwd, className] ++ decs
     }
 
 pClassVarDec :: Parser ParseResult
@@ -42,15 +37,13 @@ pClassVarDec = do
     kwd <- sat (== Keyword "static") +++ sat (== Keyword "field")
     whattype <- pType
     varNames <-  pVarName `sepby1` (ParseNode <$> sat (== Symbol ','))
-    end <- sat (== Symbol ';')
+    end <- pEnd
     return $ ParseTree {
         what = "classVarDec",
         children = [
             ParseNode kwd,
             whattype
-        ] ++ varNames ++ [
-            ParseNode end
-        ]
+        ] ++ varNames ++ [end]
     }
 
 pSubroutineDec :: Parser ParseResult
@@ -58,21 +51,15 @@ pSubroutineDec = do
     kwd <- ParseNode <$> sat (== Keyword "constructor") +++ sat (== Keyword "function") +++ sat (== Keyword "method")
     rettype <- pType +++ (ParseNode <$> sat (== Keyword "void"))
     subroutineName <- pSubroutineName
-    sym1 <- ParseNode <$> sat (== Symbol '(')
-    parameterList <- pParameterList
-    sym2 <- ParseNode <$> sat (== Symbol ')')
+    parameterList <- pBracket '(' ')' pParameterList
     subroutineBody <- pSubroutineBody
     return ParseTree {
         what = "subroutineDec",
         children = [
             kwd,
             rettype,
-            subroutineName,
-            sym1,
-            parameterList,
-            sym2,
-            subroutineBody
-        ]
+            subroutineName
+        ] ++ parameterList ++ [subroutineBody]
     }
 
 pSubroutineBody :: Parser ParseResult
@@ -100,3 +87,4 @@ pParameterList = let
             what = "parameterList",
             children = concat results
         }
+

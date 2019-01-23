@@ -58,6 +58,13 @@ p `sepby1` sep = do a <- p
                     as <- many (do {sep <- sep; p <- p ; return [sep,p] })
                     return (a:concat as)
 
+optional :: Parser [a] -> Parser [a]
+optional p = return [] +++ do { a <- p ; return a }
+
+optional1 :: Parser a -> Parser [a]
+optional1 p = return [] +++ do { a <- p ; return [a] }
+
+
 data ParseResult = ParseTree { what :: String, children :: [ParseResult] }
     | ParseNode { content :: JackToken }
     deriving (Show, Eq)

@@ -6,6 +6,8 @@ import           Tokenizer
 import           TokenParser
 import           Control.Exception              ( evaluate )
 import           ParserProgramStructure
+import           ParserStatements
+import           ParserUtil
 
 testTokenParser = do
     describe "program structure" $ do
@@ -28,3 +30,8 @@ testTokenParser = do
     describe "statements" $ do
         it "should parse statement" $ do
             0 `shouldBe` 0
+    describe "util" $ do
+        it "should parse ()" $ do
+            (parse (pBracket '(' ')' (ParseNode <$> sat (== Identifier "a"))) $ tokenize "(a)") `shouldBe` [([ParseNode {content = Symbol '('},ParseNode {content = Identifier "a"},ParseNode {content = Symbol ')'}],[])]
+        it "should parse {}" $ do
+            (parse (pBracket '{' '}' (ParseNode <$> sat (== Identifier "a"))) $ tokenize "{a}") `shouldBe` [([ParseNode {content = Symbol '{'},ParseNode {content = Identifier "a"},ParseNode {content = Symbol '}'}],[])]
