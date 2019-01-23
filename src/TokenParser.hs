@@ -44,10 +44,6 @@ p +++ q = Parser (\cs -> case parse (p `mplus` q) cs of
 sat :: (JackToken -> Bool) -> Parser JackToken
 sat p = do { c <- item; if p c then return c else mzero }
 
-data ParseResult = ParseTree { what :: String, children :: [ParseResult] }
-                 | ParseNode { content :: JackToken }
-                deriving (Show, Eq)
-
 many0 :: Parser a -> Parser [a]
 many0 p = many1 p +++ return []
 
@@ -62,11 +58,16 @@ p `sepby1` sep = do a <- p
                     as <- many (do {sep <- sep; p <- p ; return [sep,p] })
                     return (a:concat as)
 
+data ParseResult = ParseTree { what :: String, children :: [ParseResult] }
+    | ParseNode { content :: JackToken }
+    deriving (Show, Eq)
+   
 parseXML :: [(ParseResult, a)] -> String
-parseXML result = (parseXML' . fst . head) result where
-    parseXML' (ParseTree what children) = wrap what ++ parseXMLChildren children ++ wrap ('/':what)
+parseXML = parseXML' . fst . head where
+    parseXML' (ParseTree what children) = wrap what ++ "\n" ++ (prepend . parseXMLChildren) children ++ wrap ('/':what)
     parseXML' (ParseNode token) = parseOneTokenXML token
-    wrap what = "<" ++ what ++ ">\n"
-    parseXMLChildren (x:xs) = parseXML' x ++ parseXMLChildren xs
+    wrap what = "<" ++ what ++ ">"
+    parseXMLChildren (x:xs) = parseXML' x ++ "\n" ++ parseXMLChildren xs
     parseXMLChildren _ = ""
+    prepend = unlines . (map (\x -> "    " ++ x)) . lines
     

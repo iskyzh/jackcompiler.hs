@@ -89,7 +89,7 @@ pSubroutineBody = do
 
 pParameterList :: Parser ParseResult
 pParameterList = let
-        parseResult = parameter `sepby0` ((\x -> [x]) <$> ParseNode <$> sat (== Symbol ','))
+        parseResult = parameter `sepby0` ((\x -> [x]) . ParseNode <$> sat (== Symbol ','))
         parameter = do
             whattype <- pType
             varName <- pVarName

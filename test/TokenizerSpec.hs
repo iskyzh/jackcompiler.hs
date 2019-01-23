@@ -15,27 +15,10 @@ testTokenizer = do
     describe "tokenizer" $ do
         it "should parse symbols" $ do
             tokenize "&,;)[=-*+].|<{>-}(~/"
-                `shouldBe` [ Symbol '&'
-                           , Symbol ','
-                           , Symbol ';'
-                           , Symbol ')'
-                           , Symbol '['
-                           , Symbol '='
-                           , Symbol '-'
-                           , Symbol '*'
-                           , Symbol '+'
-                           , Symbol ']'
-                           , Symbol '.'
-                           , Symbol '|'
-                           , Symbol '<'
-                           , Symbol '{'
-                           , Symbol '>'
-                           , Symbol '-'
-                           , Symbol '}'
-                           , Symbol '('
-                           , Symbol '~'
-                           , Symbol '/'
-                           ]
+                `shouldBe` [ Symbol '&' , Symbol ',' , Symbol ';' , Symbol ')' , Symbol '['
+                           , Symbol '=' , Symbol '-' , Symbol '*' , Symbol '+' , Symbol ']'
+                           , Symbol '.' , Symbol '|' , Symbol '<' , Symbol '{' , Symbol '>'
+                           , Symbol '-' , Symbol '}' , Symbol '(' , Symbol '~' , Symbol '/']
         it "should not parse unknown token" $ do
             evaluate (tokenize "$$#") `shouldThrow` anyErrorCall
 
