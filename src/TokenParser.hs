@@ -44,52 +44,29 @@ p +++ q = Parser (\cs -> case parse (p `mplus` q) cs of
 sat :: (JackToken -> Bool) -> Parser JackToken
 sat p = do { c <- item; if p c then return c else mzero }
 
-chainl :: Parser a -> Parser (a -> a -> a) -> a -> Parser a
-chainl p op a = (p `chainl1` op) +++ return a
+data ParseResult = ParseTree { what :: String, children :: [ParseResult] }
+                 | ParseNode { content :: JackToken }
+                deriving (Show, Eq)
 
-chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a
-p `chainl1` op = do {a <- p; rest a}
-                 where
-                    rest a = (do f <- op
-                                 b <- p
-                                 rest (f a b))
-                             +++ return a
+many0 :: Parser a -> Parser [a]
+many0 p = many1 p +++ return []
 
-data ParseResult = ParseResult {  what :: String,
-                                  children :: [ParseResult] } 
-                 | ParseNode {  what :: String,
-                                content :: JackToken }
-    deriving(Show, Eq)
+many1 :: Parser a -> Parser [a]
+many1 p = do { a <- p ; as <- many0 p ; return (a:as) }
 
-expression :: Parser ParseResult
-expression = term `chainl1` op
+sepby0 :: Parser a -> Parser a -> Parser [a]
+p `sepby0` sep = (p `sepby1` sep) +++ return []
 
-term :: Parser ParseResult
-term = checkIf isIntegerConstant "integerConstant"
-        +++ checkIf isStringConstant "stringConstant"
-        +++ do { k <- keywordConstant ; return $ ParseNode "keywordConstant" k }
-        +++ do { id <- sat isIdentifier ; return $ ParseNode "varName" id }
+sepby1 :: Parser a -> Parser a -> Parser [a]
+p `sepby1` sep = do a <- p
+                    as <- many (do {sep <- sep; p <- p ; return [sep,p] })
+                    return (a:concat as)
 
-checkIf :: (JackToken -> Bool) -> String -> Parser ParseResult
-checkIf cond what = do { p <- sat cond ; return $ ParseNode what p }
-
-keywordConstant :: Parser JackToken
-keywordConstant = sat (== Keyword "true") 
-                    +++ sat (== Keyword "false")
-                    +++ sat (== Keyword "null")
-                    +++ sat (== Keyword "this")
-
-subroutineCall :: Parser ParseResult
-subroutineCall = undefined
-
-op :: Parser (ParseResult -> ParseResult -> ParseResult)
-op = do { o <- sat isOp ; return $ mergeResult o } where
-    isOp :: JackToken -> Bool
-    isOp (Symbol x) = x `elem` symbols where symbols = "+-*/&|<>="
-    isOp _ = False
-
-mergeResult :: JackToken -> ParseResult -> ParseResult -> ParseResult
-mergeResult symb lnode@(ParseNode _ _) rnode@(ParseNode _ _) = ParseResult "term" [lnode, ParseNode "op" symb, rnode]
-mergeResult symb (ParseResult what children) rnode@(ParseNode _ _) = ParseResult what (children ++ [ParseNode "op" symb] ++ [rnode])
-mergeResult symb lnode@(ParseNode _ _) (ParseResult what children) = ParseResult what (lnode : [ParseNode "op" symb] ++ children)
-mergeResult symb (ParseResult whatL childrenL) (ParseResult whatR childrenR) = ParseResult whatL (childrenL ++ [ParseNode "op" symb] ++ childrenR)
+parseXML :: [(ParseResult, a)] -> String
+parseXML result = (parseXML' . fst . head) result where
+    parseXML' (ParseTree what children) = wrap what ++ parseXMLChildren children ++ wrap ('/':what)
+    parseXML' (ParseNode token) = parseOneTokenXML token
+    wrap what = "<" ++ what ++ ">\n"
+    parseXMLChildren (x:xs) = parseXML' x ++ parseXMLChildren xs
+    parseXMLChildren _ = ""
+    

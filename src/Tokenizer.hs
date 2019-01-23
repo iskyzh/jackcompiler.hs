@@ -3,6 +3,7 @@ module Tokenizer
     , tokenize
     , parseToken
     , parseTokenXML
+    , parseOneTokenXML
     )
 where
 
@@ -91,25 +92,26 @@ parseTokenXML :: [JackToken] -> String
 parseTokenXML tokens =
     unlines $ ["<tokens>"] ++ parseTokenXML' tokens ++ ["</tokens>"]  where
     parseTokenXML' :: [JackToken] -> [String]
-    parseTokenXML' (x : xs) =
-        case x of
-                Keyword    keyword -> enclose keyword "keyword"
-                Identifier id      -> enclose id "identifier"
-                Symbol     symbol  -> enclose
-                    (case symbol of
-                        '<' -> "&lt;"
-                        '>' -> "&gt;"
-                        '&' -> "&amp;"
-                        _   -> [symbol]
-                    )
-                    "symbol"
-                StringConstant str -> enclose str "stringConstant"
-                IntegerConstant num -> enclose (show num) "integerConstant"
-            : parseTokenXML' xs
+    parseTokenXML' (x : xs) = parseOneTokenXML x : parseTokenXML' xs
     parseTokenXML' _ = []
 
-    enclose :: String -> String -> String
-    enclose str tag = "<" ++ tag ++ "> " ++ str ++ " </" ++ tag ++ ">"
+parseOneTokenXML :: JackToken -> String
+parseOneTokenXML x = case x of
+    Keyword    keyword -> enclose keyword "keyword"
+    Identifier id      -> enclose id "identifier"
+    Symbol     symbol  -> enclose
+        (case symbol of
+            '<' -> "&lt;"
+            '>' -> "&gt;"
+            '&' -> "&amp;"
+            _   -> [symbol]
+        )
+        "symbol"
+    StringConstant str -> enclose str "stringConstant"
+    IntegerConstant num -> enclose (show num) "integerConstant"
+
+enclose :: String -> String -> String
+enclose str tag = "<" ++ tag ++ "> " ++ str ++ " </" ++ tag ++ ">"
 
 parseComments :: String -> [JackToken]
 parseComments (x : xs) | isCommentEnd xs = tokenize restTokens
