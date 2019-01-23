@@ -55,26 +55,42 @@ p `sepby0` sep = (p `sepby1` sep) +++ return []
 
 sepby1 :: Parser a -> Parser a -> Parser [a]
 p `sepby1` sep = do a <- p
-                    as <- many (do {sep <- sep; p <- p ; return [sep,p] })
+                    as <- many0 (do {sep <- sep; p <- p ; return [sep,p] })
                     return (a:concat as)
 
 optional :: Parser [a] -> Parser [a]
-optional p = return [] +++ do { a <- p ; return a }
+optional p = do { a <- p ; return a } +++ return [] 
 
 optional1 :: Parser a -> Parser [a]
-optional1 p = return [] +++ do { a <- p ; return [a] }
+optional1 p = do { a <- p ; return [a] } +++ return []
 
 
 data ParseResult = ParseTree { what :: String, children :: [ParseResult] }
     | ParseNode { content :: JackToken }
+    | Emp
     deriving (Show, Eq)
    
-parseXML :: [(ParseResult, a)] -> String
-parseXML = parseXML' . fst . head where
+parseXML :: [(ParseResult, [a])] -> String
+parseXML = parseXML' . selectParse where
     parseXML' (ParseTree what children) = wrap what ++ "\n" ++ (prepend . parseXMLChildren) children ++ wrap ('/':what)
     parseXML' (ParseNode token) = parseOneTokenXML token
+    parseXML' _ = error "Compile error"
     wrap what = "<" ++ what ++ ">"
     parseXMLChildren (x:xs) = parseXML' x ++ "\n" ++ parseXMLChildren xs
     parseXMLChildren _ = ""
-    prepend = unlines . (map (\x -> "    " ++ x)) . lines
-    
+    prepend = unlines . (map (\x -> "  " ++ x)) . lines
+
+parseChildrenXML :: [([ParseResult], a)] -> String
+parseChildrenXML = parseXMLChildren' . fst . head where
+    parseXMLChildren' children = parseXML [(tree, [])] where
+        tree = ParseTree {
+            what = "tree",
+            children = children
+        }
+
+selectParse :: [(ParseResult, [a])] -> ParseResult
+selectParse ((result, t):xs)
+    | length t == 0 = result
+    | otherwise = selectParse xs
+
+selectParse _ = Emp

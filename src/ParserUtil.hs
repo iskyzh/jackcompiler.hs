@@ -19,3 +19,12 @@ pBrackets l r parser = do
 
 pEnd :: Parser ParseResult
 pEnd = ParseNode <$> sat (== Symbol ';')
+
+pClassName :: Parser ParseResult
+pClassName = ParseNode <$> sat isIdentifier
+
+pSubroutineName :: Parser ParseResult
+pSubroutineName = ParseNode <$> sat isIdentifier
+
+pVarName :: Parser ParseResult
+pVarName = ParseNode <$> sat isIdentifier

@@ -2,12 +2,12 @@ module ParserStatements where
 
 import Tokenizer
 import TokenParser
-import ParserProgramStructure
+import ParserExpressions
 import ParserUtil
 
 pStatements :: Parser ParseResult
 pStatements = do 
-    statements <- many1 pStatement
+    statements <- many0 pStatement
     return ParseTree {
         what = "statements",
         children = statements
@@ -67,7 +67,7 @@ pDoStatement = do
     end <- pEnd
     return ParseTree {
         what = "doStatement",
-        children = [kwd, subroutineCall, end]
+        children = kwd : subroutineCall ++ [end]
     }
 pReturnStatement :: Parser ParseResult
 pReturnStatement = do
@@ -78,12 +78,3 @@ pReturnStatement = do
         what = "returnStatement",
         children = kwd : expression ++ [end]
     }
-
-pExpression :: Parser ParseResult
-pExpression = return ParseTree {
-        what = "expression",
-        children = []
-    }
-
-pSubroutineCall :: Parser ParseResult
-pSubroutineCall = undefined

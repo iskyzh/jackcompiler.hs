@@ -3,15 +3,7 @@ module ParserProgramStructure where
 import TokenParser
 import Tokenizer
 import ParserUtil
-
-pClassName :: Parser ParseResult
-pClassName = ParseNode <$> sat isIdentifier
-
-pSubroutineName :: Parser ParseResult
-pSubroutineName = ParseNode <$> sat isIdentifier
-
-pVarName :: Parser ParseResult
-pVarName = ParseNode <$> sat isIdentifier
+import ParserStatements
 
 pType :: Parser ParseResult
 pType = (ParseNode <$> sat (== Keyword "int"))
@@ -64,14 +56,13 @@ pSubroutineDec = do
 
 pSubroutineBody :: Parser ParseResult
 pSubroutineBody = do
-    sym1 <- ParseNode <$> sat (== Symbol '{')
-    sym2 <- ParseNode <$> sat (== Symbol '}')
+    body <- pBrackets '{' '}' $ do
+        varDec <- many0 pVarDec
+        statements <- pStatements
+        return $ varDec ++ [statements]
     return ParseTree {
         what = "subroutineBody",
-        children = [
-            sym1,
-            sym2
-        ]
+        children = body
     }
 
 pParameterList :: Parser ParseResult
@@ -88,3 +79,16 @@ pParameterList = let
             children = concat results
         }
 
+pVarDec :: Parser ParseResult
+pVarDec = do
+    kwd <- ParseNode <$> sat (== Keyword "var")
+    whattype <- pType
+    varNames <-  pVarName `sepby1` (ParseNode <$> sat (== Symbol ','))
+    end <- pEnd
+    return $ ParseTree {
+        what = "varDec",
+        children = [
+            kwd,
+            whattype
+        ] ++ varNames ++ [end]
+    }
