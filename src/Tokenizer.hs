@@ -1,10 +1,10 @@
 module Tokenizer
-    ( JackToken(..)
-    , tokenize
-    , parseToken
-    , parseTokenXML
-    , parseOneTokenXML
-    )
+        ( JackToken(..)
+        , tokenize
+        , parseToken
+        , parseTokenXML
+        , parseOneTokenXML
+        )
 where
 
 import           Data.Char                      ( isDigit
@@ -19,70 +19,73 @@ data JackToken = Keyword String
                deriving (Show, Eq)
 
 tokenize :: String -> [JackToken]
-tokenize allTokens@(x : xs) | isCommentBegin allTokens     = parseComments xs
-                  | isCommentLineBegin allTokens = tokenize nextLine
-                  | isSymbol x                   = Symbol x : tokenize xs
-                  | x == '"'                     = tokenizeString xs
-                  | isDigit x                    = tokenizeInteger allTokens
-                  | isIdentifierBegin x          = tokenizeIdentifier allTokens
-                  | isSpace x                    = tokenize xs
-                  | otherwise                    = error "not a token"
-  where
-    nextLine =
-        let (prev, nextLine) = break (== '\n') allTokens in drop 1 nextLine
+tokenize allTokens@(x : xs) | isCommentBegin allTokens = parseComments xs
+                            | isCommentLineBegin allTokens = tokenize nextLine
+                            | isSymbol x = Symbol x : tokenize xs
+                            | x == '"' = tokenizeString xs
+                            | isDigit x = tokenizeInteger allTokens
+                            | isIdentifierBegin x = tokenizeIdentifier allTokens
+                            | isSpace x = tokenize xs
+                            | otherwise = error "not a token"
+    where
+        nextLine =
+                let (prev, nextLine) = break (== '\n') allTokens
+                in  drop 1 nextLine
 
 tokenize _ = []
 
 tokenizeString :: String -> [JackToken]
-tokenizeString str = tokenizeString' str ""  where
-    tokenizeString' (x : xs) str | x == '\"' = StringConstant str : tokenize xs
-                                 | x == '\n' = error "not a string"
-                                 | otherwise = tokenizeString' xs (str ++ [x])
-    tokenizeString' _ str = error "not a string"
+tokenizeString str = tokenizeString' str ""    where
+        tokenizeString' (x : xs) str
+                | x == '\"' = StringConstant str : tokenize xs
+                | x == '\n' = error "not a string"
+                | otherwise = tokenizeString' xs (str ++ [x])
+        tokenizeString' _ str = error "not a string"
 
 tokenizeInteger :: String -> [JackToken]
-tokenizeInteger str = tokenizeInteger' str 0  where
-    tokenizeInteger' (x : xs) num
-        | isDigit x = tokenizeInteger' xs (num * 10 + (read [x]) :: Int)
-        | isSpace x || isSymbol x = IntegerConstant num : tokenize (x : xs)
-        | otherwise = error "not an integer"
-    tokenizeInteger' _ num = [IntegerConstant num]
+tokenizeInteger str = tokenizeInteger' str 0    where
+        tokenizeInteger' (x : xs) num
+                | isDigit x = tokenizeInteger' xs (num * 10 + (read [x]) :: Int)
+                | isSpace x || isSymbol x = IntegerConstant num
+                : tokenize (x : xs)
+                | otherwise = error "not an integer"
+        tokenizeInteger' _ num = [IntegerConstant num]
 
 tokenizeIdentifier :: String -> [JackToken]
-tokenizeIdentifier str = tokenizeIdentifier' str ""  where
-    tokenizeIdentifier' (x : xs) id
-        | isIdentifier x = tokenizeIdentifier' xs (id ++ [x])
-        | otherwise      = recognize id : tokenize (x : xs)
-    tokenizeIdentifier' _ id = [recognize id]
+tokenizeIdentifier str = tokenizeIdentifier' str ""    where
+        tokenizeIdentifier' (x : xs) id
+                | isIdentifier x = tokenizeIdentifier' xs (id ++ [x])
+                | otherwise      = recognize id : tokenize (x : xs)
+        tokenizeIdentifier' _ id = [recognize id]
 
-    recognize id = case isKeyword id of
-        True  -> Keyword id
-        False -> Identifier id
-    isKeyword id = id `elem` keywords
+        recognize id = case isKeyword id of
+                True  -> Keyword id
+                False -> Identifier id
+        isKeyword id = id `elem` keywords
 
-    keywords =
-        [ "class"
-        , "constructor"
-        , "function"
-        , "method"
-        , "field"
-        , "static"
-        , "var"
-        , "int"
-        , "char"
-        , "boolean"
-        , "void"
-        , "true"
-        , "false"
-        , "null"
-        , "this"
-        , "let"
-        , "do"
-        , "if"
-        , "else"
-        , "while"
-        , "return"
-        ]
+        keywords =
+                [ "class"
+                , "constructor"
+                , "function"
+                , "method"
+                , "field"
+                , "static"
+                , "var"
+                , "int"
+                , "char"
+                , "boolean"
+                , "void"
+                , "true"
+                , "false"
+                , "null"
+                , "this"
+                , "let"
+                , "do"
+                , "if"
+                , "else"
+                , "while"
+                , "return"
+                ]
 
 parseToken :: [JackToken] -> String
 parseToken (x : xs) = show x ++ ['\n'] ++ parseToken xs
@@ -90,25 +93,25 @@ parseToken _        = ""
 
 parseTokenXML :: [JackToken] -> String
 parseTokenXML tokens =
-    unlines $ ["<tokens>"] ++ parseTokenXML' tokens ++ ["</tokens>"]  where
-    parseTokenXML' :: [JackToken] -> [String]
-    parseTokenXML' (x : xs) = parseOneTokenXML x : parseTokenXML' xs
-    parseTokenXML' _ = []
+        unlines $ ["<tokens>"] ++ parseTokenXML' tokens ++ ["</tokens>"]    where
+        parseTokenXML' :: [JackToken] -> [String]
+        parseTokenXML' (x : xs) = parseOneTokenXML x : parseTokenXML' xs
+        parseTokenXML' _        = []
 
 parseOneTokenXML :: JackToken -> String
 parseOneTokenXML x = case x of
-    Keyword    keyword -> enclose keyword "keyword"
-    Identifier id      -> enclose id "identifier"
-    Symbol     symbol  -> enclose
-        (case symbol of
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '&' -> "&amp;"
-            _   -> [symbol]
-        )
-        "symbol"
-    StringConstant str -> enclose str "stringConstant"
-    IntegerConstant num -> enclose (show num) "integerConstant"
+        Keyword    keyword -> enclose keyword "keyword"
+        Identifier id      -> enclose id "identifier"
+        Symbol     symbol  -> enclose
+                (case symbol of
+                        '<' -> "&lt;"
+                        '>' -> "&gt;"
+                        '&' -> "&amp;"
+                        _   -> [symbol]
+                )
+                "symbol"
+        StringConstant  str -> enclose str "stringConstant"
+        IntegerConstant num -> enclose (show num) "integerConstant"
 
 enclose :: String -> String -> String
 enclose str tag = "<" ++ tag ++ "> " ++ str ++ " </" ++ tag ++ ">"
@@ -116,7 +119,7 @@ enclose str tag = "<" ++ tag ++ "> " ++ str ++ " </" ++ tag ++ ">"
 parseComments :: String -> [JackToken]
 parseComments (x : xs) | isCommentEnd xs = tokenize restTokens
                        | otherwise       = parseComments xs
-    where restTokens = drop 2 xs
+        where restTokens = drop 2 xs
 parseComments _ = []
 
 isIdentifier :: Char -> Bool
