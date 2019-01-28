@@ -6,4 +6,7 @@ A Jack compiler implemented in Haskell for Nand2Tetris course.
 
 This project is based on ["Monadic Parsing in Haskell"](http://www.cs.nott.ac.uk/~pszgmh/pearl.pdf).
 
-Related works: [HackVM.hs](https://github.com/SkyZH/hackvm.hs)
+## Related works
+
+[hackVM.hs](https://github.com/SkyZH/hackvm.hs)
+[hackASM.hs](https://github.com/SkyZH/hackasm.hs)
