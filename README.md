@@ -8,5 +8,5 @@ This project is based on ["Monadic Parsing in Haskell"](http://www.cs.nott.ac.uk
 
 ## Related works
 
-[hackVM.hs](https://github.com/SkyZH/hackvm.hs)
-[hackASM.hs](https://github.com/SkyZH/hackasm.hs)
+* [hackVM.hs](https://github.com/SkyZH/hackvm.hs)
+* [hackASM.hs](https://github.com/SkyZH/hackasm.hs)
