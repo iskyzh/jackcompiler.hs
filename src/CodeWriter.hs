@@ -7,12 +7,12 @@ import TokenParser
 import Tokenizer
 import Data.Map.Strict
 
-data SymbolTable = ST { localSymbols :: Map String Int
+data SymbolTable = ST { local :: Map String Int
                         }
 
 findSymbol :: SymbolTable -> String -> String
-findSymbol (ST localSymbols) symbol
-    | member symbol localSymbols = "local " ++ show (localSymbols ! symbol)
+findSymbol (ST local) symbol
+    | member symbol local = "local " ++ show (local ! symbol)
     | otherwise = error "symbol not found"
 
 writeCode :: SymbolTable -> ParseResult -> [String]
